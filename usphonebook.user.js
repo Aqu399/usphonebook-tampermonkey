@@ -2,8 +2,8 @@
 // @name         USPhoneBook 全自动批量搜索
 // @namespace    uspb
 // @version      13.0
-// @updateURL    https://raw.githubusercontent.com/aquaqu0102/usphonebook-tampermonkey/main/usphonebook.user.js
-// @downloadURL  https://raw.githubusercontent.com/aquaqu0102/usphonebook-tampermonkey/main/usphonebook.user.js
+// @updateURL    https://raw.githubusercontent.com/Aqu399/usphonebook-tampermonkey/main/usphonebook.user.js
+// @downloadURL  https://raw.githubusercontent.com/Aqu399/usphonebook-tampermonkey/main/usphonebook.user.js
 // @description  直接跳转姓名URL, 不填表单, 全自动 · 内置性别过滤
 // @match        https://www.usphonebook.com/*
 // @grant        none
