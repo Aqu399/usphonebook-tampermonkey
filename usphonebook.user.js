@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         USPhoneBook 全自动批量搜索
 // @namespace    uspb
-// @version      14.0
+// @version      15.3
 // @updateURL    https://raw.githubusercontent.com/Aqu399/usphonebook-tampermonkey/main/usphonebook.user.js
 // @downloadURL  https://raw.githubusercontent.com/Aqu399/usphonebook-tampermonkey/main/usphonebook.user.js
 // @description  直接跳转姓名URL, 不填表单, 全自动 · 内置性别过滤
@@ -75,17 +75,32 @@ function isCF(){
     }catch(e){return false}
 }
 function sl(ms){return new Promise(r=>setTimeout(r,ms))}
-function sv(s){try{sessionStorage.setItem(SK,JSON.stringify(s))}catch(e){}}
-function ld(){try{return JSON.parse(sessionStorage.getItem(SK))}catch(e){}return null}
-function cl(){try{sessionStorage.removeItem(SK)}catch(e){}}
+function sv(s){try{sessionStorage.setItem(SK,JSON.stringify(s))}catch(e){}try{localStorage.setItem(SK,JSON.stringify(s))}catch(e){}}
+function ld(){try{return JSON.parse(sessionStorage.getItem(SK))||JSON.parse(localStorage.getItem(SK))}catch(e){}return null}
+function cl(){try{sessionStorage.removeItem(SK)}catch(e){}try{localStorage.removeItem(SK)}catch(e){}}
 function esc(s){if(!s)return'""';s=String(s).replace(/"/g,'""');return'"'+s+'"'}
 function dc(s){try{const k=parseInt(s.slice(0,2),16);let r='';for(let i=2;i<s.length;i+=2)r+=String.fromCharCode(parseInt(s.slice(i,i+2),16)^k);return r}catch(e){return s}}
 
-// ─── 性别推断 ───
+// ─── 性别推断 (本地映射 + 启发式兜底) ───
+const G2={"aamir":"M","aarav":"M","abdullah":"M","abram":"M","ace":"M","adair":"M","adalberto":"M","adonis":"M","agustin":"M","ahmad":"M","ahmed":"M","aiden":"M","akeem":"M","al":"M","alain":"M","alastair":"M","alec":"M","alejandro":"M","alen":"M","alexandro":"M","alfredo":"M","ali":"M","alijah":"M","alistair":"M","allan":"M","alonso":"M","alonzo":"M","alphonse":"M","alton":"M","alvaro":"M","amari":"M","amarion":"M","amos":"M","andre":"M","andres":"M","andy":"M","angel":"M","angelo":"M","ansel":"M","ansley":"M","antione":"M","antoine":"M","antoinio":"M","antoni":"M","antwan":"M","apollo":"M","archie":"M","aris":"M","armando":"M","armani":"M","armin":"M","arnold":"M","aron":"M","art":"M","artemis":"M","arturo":"M","aryan":"M","asher":"M","ashley":"M","atlas":"M","aubrey":"M","august":"M","aurelio":"M","austin":"M","avery":"M","avis":"M","axl":"M","bacilio":"M","barney":"M","barret":"M","bastian":"M","bayard":"M","beauregard":"M","berkley":"M","binyamin":"M","boden":"M","bodie":"M","bo":"M","boone":"M","borden":"M","bowen":"M","boyce":"M","bradly":"M","brayan":"M","brayden":"M","braydon":"M","briar":"M","brogan":"M","bronson":"M","bruce":"M","bryant":"M","brycen":"M","bryson":"M","buck":"M","bud":"M","buddy":"M","burt":"M","buster":"M","byron":"M","cade":"M","cael":"M","caelan":"M","caiden":"M","cal":"M","callahan":"M","callan":"M","callum":"M","cam":"M","camden":"M","cameron":"M","campbell":"M","cannon":"M","carlisle":"M","carson":"M","carter":"M","casen":"M","casey":"M","cash":"M","cassian":"M","cassidy":"M","cato":"M","chaim":"M","chance":"M","chandler":"M","channing":"M","charlie":"M","chas":"M","chasity":"M","chester":"M","chico":"M","chris":"M","christapher":"M","christian":"M","christoper":"M","cillian":"M","clark":"M","claudio":"M","clay":"M","clayton":"M","clement":"M","cleo":"M","cliff":"M","clint":"M","coby":"M","codey":"M","coen":"M","cole":"M","colin":"M","collin":"M","colson":"M","colt":"M","colten":"M","connor":"M","conor":"M","conrad":"M","cooper":"M","corbin":"M","cordell":"M","corey":"M","cory":"M","creed":"M","curt":"M","cy":"M","cyril":"M","dakota":"M","dangelo":"M","darnell":"M","darrel":"M","darren":"M","darrin":"M","darryl":"M","davon":"M","dax":"M","dayton":"M","deacon":"M","deandre":"M","declan":"M","deion":"M","del":"M","delbert":"M","demarco":"M","demarcus":"M","demetrius":"M","denis":"M","denver":"M","deon":"M","derek":"M","derick":"M","deshaun":"M","deshawn":"M","desmond":"M","devan":"M","devante":"M","deven":"M","devonte":"M","dhruv":"M","dick":"M","diego":"M","dillan":"M","dillon":"M","dino":"M","dion":"M","dirk":"M","dominic":"M","dominick":"M","dominik":"M","don":"M","donavan":"M","donell":"M","donnie":"M","donny":"M","donovan":"M","dorian":"M","douglas":"M","doyle":"M","draco":"M","drake":"M","draven":"M","drew":"M","dudley":"M","duke":"M","duncan":"M","dustin":"M","dusty":"M","dwayne":"M","dwight":"M","dylan":"M","easton":"M","ed":"M","eddie":"M","eddy":"M","edison":"M","edmond":"M","efrain":"M","efren":"M","elbert":"M","elder":"M","elian":"M","elias":"M","elio":"M","elisha":"M","ellery":"M","elliot":"M","elliott":"M","ellis":"M","ellison":"M","elmer":"M","elton":"M","elvin":"M","elvis":"M","emanuel":"M","emerson":"M","emery":"M","emil":"M","emiliano":"M","emilio":"M","emmanuel":"M","emmett":"M","ennis":"M","enoch":"M","enrico":"M","enrique":"M","enzo":"M","ephraim":"M","erasmo":"M","erick":"M","erik":"M","ernesto":"M","ernie":"M","errol":"M","ervin":"M","esteban":"M","estevan":"M","ethan":"M","eusebio":"M","evan":"M","everett":"M","ezekiel":"M","ezra":"M","fabian":"M","faron":"M","federico":"M","felipe":"M","felix":"M","ferdinand":"M","fidel":"M","finnegan":"M","fisher":"M","flint":"M","florentino":"M","florian":"M","floyd":"M","flynn":"M","ford":"M","forest":"M","forrest":"M","foster":"M","francis":"M","francisco":"M","frank":"M","frankie":"M","franklin":"M","fred":"M","freddie":"M","freddy":"M","frederic":"M","fredrick":"M","freeman":"M","fritz":"M","gabe":"M","gabriel":"M","gaige":"M","garland":"M","garret":"M","garrett":"M","garry":"M","garth":"M","gaspar":"M","gaston":"M","gavin":"M","gene":"M","geoff":"M","geoffrey":"M","george":"M","gerald":"M","gerard":"M","gerardo":"M","gerry":"M","giovani":"M","giovanni":"M","giuseppe":"M","glen":"M","glenn":"M","gonzalo":"M","gordon":"M","grady":"M","graham":"M","grant":"M","grecian":"M","gregg":"M","gregorio":"M","greyson":"M","griffin":"M","guillermo":"M","gunnar":"M","gunther":"M","gus":"M","gustavo":"M","hakeem":"M","hal":"M","hamza":"M","hank":"M","hans":"M","harlan":"M","harley":"M","harmon":"M","harold":"M","harper":"M","harrison":"M","harvey":"M","hasan":"M","hassan":"M","hayden":"M","heath":"M","hector":"M","hendrix":"M","henri":"M","henry":"M","herb":"M","herbert":"M","heriberto":"M","herman":"M","herschel":"M","hezekiah":"M","hilario":"M","hilton":"M","hiram":"M","hobart":"M","holden":"M","homer":"M","horace":"M","horatio":"M","hosea":"M","houston":"M","howard":"M","hoyt":"M","hubert":"M","huey":"M","hugh":"M","hugo":"M","humberto":"M","humphrey":"M","hunter":"M","hussein":"M","ian":"M","ignacio":"M","ike":"M","immanuel":"M","irvin":"M","irving":"M","irwin":"M","isaac":"M","isaiah":"M","isaias":"M","ishmael":"M","isiah":"M","isidro":"M","ismael":"M","israel":"M","issac":"M","ito":"M","ivan":"M","ivory":"M","jabari":"M","jace":"M","jack":"M","jackson":"M","jacob":"M","jaden":"M","jadon":"M","jaime":"M","jake":"M","jakob":"M","jakobe":"M","jaleel":"M","jamal":"M","jamar":"M","jamel":"M","jameson":"M","jamie":"M","jamil":"M","jamison":"M","jaren":"M","jaron":"M","jase":"M","jasen":"M","jay":"M","jayce":"M","jayceon":"M","jayden":"M","jaylen":"M","jayson":"M","jayvon":"M","jean":"M","jed":"M","jedidiah":"M","jeff":"M","jeffery":"M","jeffry":"M","jerald":"M","jeramie":"M","jeramy":"M","jere":"M","jeremie":"M","jermaine":"M","jerod":"M","jerrell":"M","jerrod":"M","jess":"M","jesse":"M","jesus":"M","jett":"M","jim":"M","jimmy":"M","joaquin":"M","joe":"M","joel":"M","joesph":"M","joey":"M","johannes":"M","johnathan":"M","johnathon":"M","johnie":"M","johnnie":"M","johnny":"M","jona":"M","jonah":"M","jonas":"M","jordan":"M","jordy":"M","jorge":"M","jose":"M","josef":"M","joseph":"M","josh":"M","joshua":"M","joshue":"M","josiah":"M","josue":"M","jovan":"M","joziah":"M","juan":"M","judah":"M","judd":"M","jude":"M","julian":"M","julio":"M","julius":"M","junior":"M","justin":"M","kade":"M","kaden":"M","kadin":"M","kaeden":"M","kahlil":"M","kai":"M","kale":"M","kaleb":"M","kalel":"M","kamari":"M","kameron":"M","kane":"M","kareem":"M","karim":"M","karson":"M","kasey":"M","kash":"M","kason":"M","keanu":"M","keaton":"M","keegan":"M","keelan":"M","keenan":"M","keith":"M","kellen":"M","keller":"M","kelton":"M","kelvin":"M","ken":"M","kenan":"M","kendall":"M","kendrick":"M","kenneth":"M","kennith":"M","kenny":"M","kent":"M","kenton":"M","kenyon":"M","keon":"M","kevin":"M","khalil":"M","kian":"M","kiefer":"M","kieran":"M","killian":"M","kim":"M","king":"M","kip":"M","kirby":"M","kirk":"M","kit":"M","kody":"M","kohen":"M","kole":"M","kolton":"M","korbin":"M","korey":"M","kory":"M","kris":"M","kristian":"M","kristopher":"M","kurt":"M","kurtis":"M","kyan":"M","kyle":"M","kyler":"M","kymani":"M","kyree":"M","kyson":"M","laine":"M","lamar":"M","lambert":"M","lamont":"M","lance":"M","landen":"M","landon":"M","lane":"M","langston":"M","lanny":"M","larry":"M","lars":"M","larson":"M","lawrence":"M","lawson":"M","layne":"M","layton":"M","lazaro":"M","le":"M","leander":"M","leland":"M","len":"M","lenard":"M","leo":"M","leon":"M","leonard":"M","leonardo":"M","leonce":"M","leonel":"M","leopold":"M","leroy":"M","les":"M","lester":"M","levi":"M","lewis":"M","liam":"M","lincoln":"M","linwood":"M","lionel":"M","lloyd":"M","logan":"M","lonnie":"M","lonny":"M","lou":"M","louie":"M","louis":"M","lowell":"M","luca":"M","lucas":"M","lucian":"M","lucien":"M","lucio":"M","lucious":"M","lucky":"M","luigi":"M","luis":"M","lukas":"M","luke":"M","luther":"M","lyle":"M","lyndon":"M","lynton":"M","mac":"M","mack":"M","major":"M","malachi":"M","malcolm":"M","malik":"M","manuel":"M","marc":"M","marcel":"M","marcelo":"M","marco":"M","Marcos":"M","marcus":"M","mario":"M","marion":"M","marques":"M","marquez":"M","marquis":"M","marshall":"M","martin":"M","mateo":"M","mathew":"M","matias":"M","matt":"M","maurice":"M","mauricio":"M","maverick":"M","max":"M","maxim":"M","maximiliano":"M","maximillian":"M","maxwell":"M","mckinley":"M","mekhi":"M","mel":"M","melvin":"M","merle":"M","merlin":"M","merton":"M","micah":"M","michael":"M","michale":"M","miguel":"M","mike":"M","mikel":"M","miles":"M","millard":"M","milo":"M","milton":"M","mohammad":"M","mohammed":"M","moises":"M","monroe":"M","monte":"M","montana":"M","montgomery":"M","monty":"M","morgan":"M","morris":"M","mortimer":"M","morton":"M","moses":"M","moshe":"M","muhammad":"M","murphy":"M","murray":"M","mustafa":"M","myles":"M","myron":"M","nathan":"M","nathanael":"M","nathanial":"M","nathaniel":"M","neal":"M","neil":"M","nelson":"M","nestor":"M","nicholas":"M","nick":"M","nickolas":"M","nicolas":"M","nigel":"M","nikhil":"M","nikko":"M","niko":"M","nikolas":"M","niles":"M","nixon":"M","noah":"M","noble":"M","noe":"M","noel":"M","nolan":"M","norbert":"M","norman":"M","norris":"M","numbers":"M","octavio":"M","odd":"M","ode":"M","odell":"M","odin":"M","olaf":"M","olen":"M","olin":"M","oliver":"M","ollie":"M","omer":"M","omri":"M","oran":"M","orlando":"M","orrin":"M","orville":"M","oscar":"M","osvaldo":"M","othello":"M","otis":"M","otto":"M","owen":"M","pablo":"M","pace":"M","paco":"M","palmer":"M","paris":"M","parker":"M","parnell":"M","parry":"M","pat":"M","patsy":"M","patterson":"M","paul":"M","pedro":"M","percy":"M","perry":"M","pete":"M","peter":"M","phil":"M","philip":"M","phillip":"M","pierce":"M","pierre":"M","porter":"M","prentice":"M","presley":"M","preston":"M","price":"M","prince":"M","quentin":"M","quincey":"M","quincy":"M","quinn":"M","quirino":"M","quyen":"M","rachid":"M","rafael":"M","raheem":"M","rahman":"M","raleigh":"M","ralph":"M","ramiro":"M","ramon":"M","randal":"M","randall":"M","randell":"M","randolph":"M","randy":"M","raphael":"M","rashad":"M","rashawn":"M","raul":"M","ray":"M","raymon":"M","raymond":"M","reagan":"M","reece":"M","reed":"M","reese":"M","refugio":"M","reginald":"M","reid":"M","reilly":"M","reinaldo":"M","reiner":"M","remington":"M","remy":"M","renaldo":"M","renato":"M","rene":"M","reuben":"M","rex":"M","rey":"M","reynaldo":"M","rhett":"M","rhys":"M","ricardo":"M","rickey":"M","rickie":"M","ricky":"M","rico":"M","rigoberto":"M","riley":"M","rio":"M","rob":"M","robby":"M","robert":"M","roberto":"M","robin":"M","rocky":"M","rod":"M","roddy":"M","roderick":"M","rodney":"M","rodolfo":"M","rodrick":"M","rodrigo":"M","rogelio":"M","roger":"M","roland":"M","rolando":"M","roman":"M","romeo":"M","ron":"M","ronald":"M","ronnie":"M","ronny":"M","roosevelt":"M","rory":"M","roscoe":"M","ross":"M","rossie":"M","rowan":"M","roy":"M","royal":"M","royce":"M","ruben":"M","rudolph":"M","rudy":"M","rufus":"M","rupert":"M","russel":"M","russell":"M","rusty":"M","ryan":"M","ryder":"M","ryker":"M","rylan":"M","rylee":"M","sahil":"M","sal":"M","salvador":"M","salvatore":"M","sam":"M","sammie":"M","sammy":"M","sampson":"M","samson":"M","samuel":"M","sandy":"M","santana":"M","santiago":"M","santo":"M","santos":"M","saul":"M","sawyer":"M","scot":"M","scott":"M","scottie":"M","scotty":"M","sean":"M","sebastian":"M","sedrick":"M","shad":"M","shane":"M","shannon":"M","shaquille":"M","shayne":"M","shaun":"M","shawn":"M","shayne":"M","shea":"M","shedrick":"M","sheldon":"M","shelton":"M","sherman":"M","shirley":"M","silas":"M","sincere":"M","skylar":"M","skyler":"M","slade":"M","sloan":"M","sly":"M","sol":"M","solomon":"M","sonny":"M","spencer":"M","stacey":"M","stan":"M","stanford":"M","stanley":"M","stefan":"M","steph":"M","stephan":"M","sterling":"M","steve":"M","steven":"M","stevie":"M","stewart":"M","stetson":"M","stone":"M","stuart":"M","sullivan":"M","sylvester":"M","tad":"M","tal":"M","tanner":"M","tate":"M","taylor":"M","tevin":"M","tex":"M","thad":"M","thaddeus":"M","theo":"M","theodore":"M","thomas":"M","thor":"M","tiberius":"M","tim":"M","timmy":"M","timothy":"M","titus":"M","tobias":"M","tobin":"M","todd":"M","tom":"M","tomas":"M","tommy":"M","tony":"M","torey":"M","tori":"M","torrance":"M","torrence":"M","torrey":"M","tracy":"M","travis":"M","tre":"M","tremaine":"M","tremayne":"M","trent":"M","trenton":"M","trever":"M","trevin":"M","trevion":"M","trevor":"M","trey":"M","trip":"M","tripp":"M","tristan":"M","tristen":"M","tristian":"M","troy":"M","truman":"M","tucker":"M","turner":"M","ty":"M","tyler":"M","tyree":"M","tyreek":"M","tyrel":"M","tyrell":"M","tyrese":"M","tyrik":"M","tyriq":"M","tyrone":"M","tyson":"M","ulises":"M","ulrich":"M","ulysses":"M","uriah":"M","vance":"M","vaughn":"M","vicente":"M","victor":"M","vincent":"M","vincenzo":"M","virgil":"M","vito":"M","vladimir":"M","von":"M","wade":"M","waldo":"M","walker":"M","wallace":"M","wally":"M","walter":"M","walton":"M","ward":"M","warner":"M","warren":"M","washington":"M","watson":"M","weldon":"M","weston":"M","whitney":"M","wilber":"M","wilbert":"M","wilbur":"M","wiley":"M","wilford":"M","wilfred":"M","wilfredo":"M","will":"M","william":"M","willie":"M","willis":"M","willy":"M","wilmer":"M","wilson":"M","wilton":"M","windell":"M","winfield":"M","winford":"M","winston":"M","wylie":"M","wyman":"M","xander":"M","xavier":"M","xavian":"M","yaakov":"M","yadiel":"M","yahir":"M","yardley":"M","yehuda":"M","yosef":"M","yusuf":"M","zachariah":"M","zachary":"M","zachery":"M","zack":"M","zackary":"M","zackery":"M","zahir":"M","zaiden":"M","zaire":"M","zayden":"M","zayn":"M","zayne":"M","zeb":"M","zebedee":"M","zebulon":"M","zeke":"M","zeph":"M","zephaniah":"M","zeus":"M","zion":"M"}
 function guessGender(name){
     try{
         const fn=name.split(/[\s,]+/)[0].toLowerCase().replace(/[^a-z]/g,'');
-        return G[fn]||null;
+        // 1. 本地映射精确匹配
+        const r=G[fn]||G2[fn];
+        if(r)return r;
+        // 2. 启发式: 常见女性结尾
+        if(/ina$|ette$|elle$|anne$|eigh$|ie$|ina$|inda$|issa$|icia$|ista$/.test(fn))return 'F';
+        // 3. 启发式: a/ia/ra 结尾（大部分女性名）
+        if(/[ae]a$|ia$|ra$|na$/.test(fn)&&!/(adam|nick|jos|ishma)/i.test(fn)){
+            // 排除常见男性名以a结尾的
+            const maleAEnd=['elisha','joshua','jeremiah','isaiah','jonah','noah','zechariah','obadiah','hezekiah','ezra'];
+            if(!maleAEnd.includes(fn))return 'F';
+        }
+        // 4. 长度和结尾辅助判断
+        if(fn.length>3&&/[^aeiouy]y$/.test(fn))return 'F';
+        // 5. 默认返回 null (不做假设, 通过性别过滤器放行)
+        return null;
     }catch(e){return null}
 }
 
@@ -122,7 +137,7 @@ function xt(){
         at.forEach(el=>{const t=el.textContent.trim();if(t&&!se.has(t)){se.add(t);ps2.push(t)}});r.allph=ps2.join(' | ');
         const ae=document.querySelector('a[href^="/address/"] p, a[href^="/address/"]');if(ae)r.addr=ae.textContent.trim();
         if(!r.addr){document.querySelectorAll('h3').forEach(h3=>{if(h3.textContent.includes('Current Address')){const p=h3.closest('div')?.nextElementSibling?.querySelector('p');if(p)r.addr=p.textContent.trim()}})}
-        const ageE=document.querySelector('p.ls_contacts__age,[class*="age"]');if(ageE)r.age=ageE.textContent.trim();
+        const ageE=document.querySelector('p.ls_contacts__age');if(ageE)r.age=ageE.textContent.trim();
         const ems=[];document.querySelectorAll('ul.emailslist li a').forEach(el=>{const cf=el.querySelector('span.__cf_email__');if(cf?.dataset?.cfemail)ems.push(dc(cf.dataset.cfemail));else{const t=el.textContent.trim();if(t.includes('@'))ems.push(t)}});r.em=ems.join(' | ');
         // 从页面标题推断性别
         const h1=document.querySelector('h1');
@@ -142,10 +157,37 @@ function getLinks(){
 
 function nameToSlug(n){return n.toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')}
 
+// ─── 面板偏好持久化 ───
+const PK=SK+'_prefs';
+function svPrefs(){try{localStorage.setItem(PK,JSON.stringify({
+    wl:!!(document.getElementById('uspb-wl')?.checked),
+    ad:!!(document.getElementById('uspb-ad')?.checked),
+    gs:!!(document.getElementById('uspb-gs')?.checked),
+    gender:document.getElementById('uspb-gender')?.value||'all'
+}));
+}catch(e){}}
+function ldPrefs(){try{return JSON.parse(localStorage.getItem(PK))}catch(e){}return null}
+function restorePrefs(){
+    const p=ldPrefs();if(!p)return;
+    const wl=document.getElementById('uspb-wl');if(wl&&p.wl!==undefined)wl.checked=p.wl;
+    const ad=document.getElementById('uspb-ad');if(ad&&p.ad!==undefined)ad.checked=p.ad;
+    const gs=document.getElementById('uspb-gs');if(gs&&p.gs!==undefined)gs.checked=p.gs;
+    const gd=document.getElementById('uspb-gender');if(gd&&p.gender)gd.value=p.gender;
+}
+
 // ─── 性别过滤 ───
-function genderFilter(r,gender){
+function genderFilter(r,gender,strict){
     if(!gender||gender=='all')return true;
     const rg=r.gender||guessGender(r.name||r.fn||'');
+    if(!rg)return !strict;  // 无法识别: 非严格模式放行, 严格模式排除
+    return rg===gender;
+}
+
+// 严格性别过滤 (勾选后无法识别性别的会被过滤掉)
+function strictGenderFilter(r,gender){
+    if(!gender||gender=='all')return true;
+    const rg=r.gender||guessGender(r.name||r.fn||'');
+    if(!rg)return false;  // 无法识别则排除
     return rg===gender;
 }
 
@@ -169,6 +211,7 @@ function createPanel(){
                 <option value="M">♂ 男</option>
                 <option value="F">♀ 女</option>
             </select>
+            <label style="margin-left:4px;font-size:11px"><input id="uspb-gs" type="checkbox" style="width:auto"> ⚠严格</label>
             <button class="btn" id="b-go">▶ 全自动开始</button>
             <button class="btn dng" id="b-sp" disabled>⏹</button>
             <button class="btn grn" id="b-csv">💾 CSV</button>
@@ -205,6 +248,7 @@ function createPanel(){
             sv({_stop:true,results});
             svResults(results);  // 同步到 localStorage
             stopF=true;
+            const ta=document.getElementById('uspb-i');if(ta)ta.disabled=false;
             l('⏹ 已停止,结果已保存到localStorage','warn');
         }
         else if(btn.id==='b-csv')exp();
@@ -213,8 +257,7 @@ function createPanel(){
 
     const state=ld();
     if(state&&state._stop){
-        // 停止后不清空结果,保留localStorage
-        cl();  // 清 sessionStorage 状态
+        cl();
         const saved=ldResults();
         if(saved&&saved.length){
             results=saved;
@@ -225,6 +268,10 @@ function createPanel(){
             l('⏹ 已停止','warn');
         }
         document.getElementById('b-go').disabled=false;
+        const ta=document.getElementById('uspb-i');if(ta)ta.disabled=false;
+        // 恢复上次的姓名列表
+        const savedNames=localStorage.getItem(SK+'_names');
+        if(savedNames&&ta&&!ta.value.trim())ta.value=savedNames;
         return;
     }
     if(state){
@@ -232,17 +279,35 @@ function createPanel(){
         if(wlCb&&state.wl!==undefined)wlCb.checked=state.wl;
         const gs=document.getElementById('uspb-gender');
         if(gs&&state.gender)gs.value=state.gender;
+        const gsCb=document.getElementById('uspb-gs');
+        if(gsCb&&state.gs!==undefined)gsCb.checked=state.gs;
+        // 恢复姓名列表 + 锁定输入框
+        const ta=document.getElementById('uspb-i');
+        if(ta){
+            const savedNames=localStorage.getItem(SK+'_names');
+            if(savedNames&&!ta.value.trim())ta.value=savedNames;
+            if(state.entries&&state.entries.length>0&&!state._stop)ta.disabled=true;
+        }
         l('↻ 恢复...');
         document.getElementById('b-go').disabled=true;
         document.getElementById('b-sp').disabled=false;
         setTimeout(()=>resume(state),2000);
-    }else l('💙 粘贴姓名,点▶全自动开始');
+    }else{
+        restorePrefs();
+        l('💙 粘贴姓名,点▶全自动开始');
+    }
+    // 自动保存面板偏好
+    ['uspb-wl','uspb-ad','uspb-gs','uspb-gender'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el)el.addEventListener('change',svPrefs);
+    });
 }
 
 async function resume(state){
     const {entries,i,delay,mn,mx,detailQueue}=state;
     const wl=state.wl!==undefined?state.wl:!!(document.getElementById('uspb-wl')?.checked);
     const gender=state.gender||document.getElementById('uspb-gender')?.value||'all';
+    const gs=state.gs!==undefined?state.gs:!!(document.getElementById('uspb-gs')?.checked);
     results=state.results||[];
     // 同步到 localStorage 兜底
     svResults(results);
@@ -269,7 +334,7 @@ async function resume(state){
         if(!r.gender)r.gender=guessGender(r.fn||entry.name);
         if(r.ph){
             const an=r.age?parseInt(r.age.match(/(\d+)/)?.[1]||'0'):null;
-            if(!genderFilter(r,gender))l(`  ⏭ ${r.ph} 性别不符`,'warn');
+            if(!genderFilter(r,gender,gs))l(`  ⏭ ${r.ph} 性别不符`,'warn');
             else if(mn&&an!==null&&an<mn)l(`  ⏭ ${r.ph} ${an}<${mn}`,'warn');
             else if(mx&&an!==null&&an>mx)l(`  ⏭ ${r.ph} ${an}>${mx}`,'warn');
             else if(wl&&r.pt!=='Wireless'&&!r.pt.includes('Wireless'))l(`  ⏭ ${r.ph} 不是Wireless`,'warn');
@@ -306,7 +371,7 @@ async function resume(state){
         if(!r.gender)r.gender=guessGender(r.fn||entry.name);
         if(r.ph){
             const an=r.age?parseInt(r.age.match(/(\d+)/)?.[1]||'0'):null;
-            if(!genderFilter(r,gender))l(`  ⏭ ${r.ph} 性别不符`,'warn');
+            if(!genderFilter(r,gender,gs))l(`  ⏭ ${r.ph} 性别不符`,'warn');
             else if(mn&&an!==null&&an<mn)l(`  ⏭ ${r.ph}`,'warn');
             else if(mx&&an!==null&&an>mx)l(`  ⏭ ${r.ph}`,'warn');
             else if(wl&&r.pt!=='Wireless'&&!r.pt.includes('Wireless'))l(`  ⏭ ${r.ph} 不是Wireless`,'warn');
@@ -349,15 +414,23 @@ async function run(){
     document.getElementById('b-go').disabled=true;
     document.getElementById('b-sp').disabled=false;
     lg.innerHTML='';
+
+    // ─── 锁定姓名输入框 + 保存原始内容 ───
+    ta.disabled=true;
+    try{localStorage.setItem(SK+'_names',ta.value)}catch(e){}
+
     const gtxt={all:'全部',M:'♂男',F:'♀女'}[gender];
     const wl=!!(document.getElementById('uspb-wl')?.checked);
+    const gs=!!(document.getElementById('uspb-gs')?.checked);
     l(`▶ ${entries.length}人`+(mn||mx?' 年龄'+mn||0+'~'+mx||999:'')+(gender!='all'?' '+gtxt:'')+` 延迟${delay}s`);
-    sv({entries,i:0,delay,mn,mx,wl,gender,results});
+    sv({entries,i:0,delay,mn,mx,wl,gender,gs,results});
     svResults(results);
     location.href='/'+nameToSlug(entries[0].name);
 }
 
 function finish(){
+    // ─── 解锁姓名输入框 ───
+    const ta=document.getElementById('uspb-i');if(ta)ta.disabled=false;
     busy=false;stopF=false;
     const s=ld();
     if(!s||!s._stop)cl();
@@ -395,9 +468,10 @@ function updatePauseUI(paused){
 function exp(){
     if(!results.length){l('❌ 无数据','err');return}
     const gender=document.getElementById('uspb-gender')?.value||'all';
+    const strict=!!(document.getElementById('uspb-gs')?.checked);
     // 过滤
     let filtered=results;
-    if(gender!='all')filtered=results.filter(r=>genderFilter(r,gender));
+    if(gender!='all')filtered=results.filter(r=>genderFilter(r,gender,strict));
     if(!filtered.length){l(`❌ 无${gender=='M'?'男':'女'}性结果可导出`,'err');return}
     const hd=['搜索姓名','搜索城市','搜索州','全名','当前电话','类型','所有电话(含类型)','地址','年龄','邮箱','性别','链接'];
     const rows=[hd.join(',')];
